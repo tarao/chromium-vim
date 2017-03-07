@@ -438,6 +438,7 @@ let completionengines = ['google', 'google-image', 'youtube'] " Show only these 
 | `P`                       | open highlighted text in new tab                                      |                                 |
 | **Text boxes**            |                                                                       |                                 |
 | `<C-i>`                   | move cursor to the beginning of the line                              | beginningOfLine                 |
+| unmapped                  | if the cursor is not at the beginning of line, then move cursor to the beginning of the line, or otherwise select the whole input text | beginningOfLineOrSelectAll |
 | `<C-e>`                   | move cursor to the end of the line                                    | endOfLine                       |
 | `<C-u>`                   | delete to the beginning of the line                                   | deleteToBeginning               |
 | `<C-o>`                   | delete to the end of the line                                         | deleteToEnd                     |

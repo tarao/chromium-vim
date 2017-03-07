@@ -776,6 +776,23 @@ Mappings.insertFunctions = (function() {
     beginningOfLine: function() {
       modify('left', 'lineboundary');
     },
+    beginningOfLineOrSelectAll: function() {
+      var selection = function() {
+        var s = [ element.selectionStart, element.selectionEnd ];
+        return {
+          start: Math.min.apply(null, s),
+          end: Math.max.apply(null, s)
+        };
+      };
+      var s = selection();
+      this.beginningOfLine();
+      if (s.start === selection().start) {
+        this.selectAll();
+      }
+      if (s.end === selection().end) {
+        this.beginningOfLine();
+      }
+    },
     endOfLine: function() {
       modify('right', 'lineboundary');
     },
