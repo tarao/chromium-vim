@@ -518,4 +518,113 @@ Complete.engines = {
       });
     }
   },
+
+  'hatena-bookmark': {
+    baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent(location.href)))",
+    queryApi: function(query, callback) {
+      this.HatenaBookmark.load(function(list) {
+        var words = query.split(/\s+/).filter(function(s) { return s.length; });
+        var ss = words.map(function(w) {
+          return this.SearchWord(list, w);
+        }.bind(this));
+        var search = this.Search(list, ss), res = [];
+        while ((search = search.next()) && res.length < 20) {
+          var item = search.result().split("\t");
+          res.push([ item[0] + "\n" + item[1], item[2] ]);
+        }
+        callback(res);
+      }.bind(this));
+    },
+    HatenaBookmark: {
+      api: function(offset, limit) {
+        var params = [];
+        if (typeof offset !== 'undefined') params.push('offset=' + offset);
+        if (typeof limit !== 'undefined') params.push('limit=' + limit);
+        return 'http://b.hatena.ne.jp/my/search.data?' + params.join('&');
+      },
+      key: 'hatena-bookmark-user-bookmarks',
+      update: function(callback) {
+        httpRequest({ url: this.api() }, function(res) {
+          res = res.split("\n");
+          var lines = res.splice(0, res.length * 3 / 4);
+          var latest = res[0].split("\t")[1];
+          var list = [];
+          for (var i=0; i < lines.length; i += 3) {
+            list.push([
+              lines[i].trim(),
+              lines[i+1].trim(),
+              lines[i+2].trim()
+            ].join("\t"));
+          }
+          var item = {
+            latest: latest,
+            list: list.join("\n") + "\n"
+          };
+          this.save(item, callback);
+        }.bind(this));
+      },
+      save: function(item, callback) {
+        callback = callback || function() {};
+        var data = {};
+        item.lastUpdatedAt = Date.now();
+        data[this.key] = item;
+        chrome.storage.local.set(data, function() {
+          callback(item.list);
+        });
+      },
+      load: function(callback) {
+        callback = callback || function() {};
+        chrome.storage.local.get(this.key, function(items) {
+          var item = items[this.key] || {};
+          if (!item.list) return this.update(callback);
+          if (Date.now() - item.lastUpdatedAt > 1000 * 60 * 30) { // 30 min
+            this.save(item);
+            return httpRequest({ url: this.api(0, 1) }, function(res) {
+              if (item.latest !== (res.split("\n")[3] || "").split("\t")[1]) {
+                this.update(callback)
+              }
+            }.bind(this));
+          }
+          callback(item.list);
+        }.bind(this));
+      }
+    },
+    SearchWord: function(lines, query, position) {
+      var self = this;
+      return {
+        position: position || -1,
+        next: function() {
+          var i = lines.indexOf(query, position);
+          if (i < 0) return null;
+          return self.SearchWord(lines, query, lines.indexOf("\n", i));
+        },
+      };
+    },
+    Search: function(lines, streams, position) { // conjunctive
+      var self = this;
+      return {
+        position: position || -1,
+        next: function() {
+          var max = this.position + 1, min = lines.length, i;
+          var ss = streams.concat([]);
+          while (min !== max) {
+            min = max;
+            for (i=0; i < ss.length; i++) {
+              var s = ss[i];
+              if (s.position < max) s = s.next();
+              if (!s) return null;
+              if (max < s.position) max = s.position;
+              if (s.position < min) min = s.position;
+              ss[i] = s;
+            }
+          }
+          return self.Search(lines, ss, max);
+        },
+        result: function() {
+          var start = lines.lastIndexOf("\n", this.position - 1) + 1;
+          return lines.substring(start, this.position);
+        },
+      };
+    },
+  },
 };
