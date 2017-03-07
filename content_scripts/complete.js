@@ -579,9 +579,10 @@ Complete.engines = {
     baseUrl: "https://www.rfc-editor.org/",
     queryApi: function(query, callback) {
       this.RFC.load(function(list) {
+        var lower = list.toLowerCase();
         var words = query.split(/\s+/).filter(function(s) { return s.length; });
         var ss = words.map(function(w) {
-          return Complete.SearchWord(list, w);
+          return Complete.SearchWord(lower, w.toLowerCase());
         });
         var search = Complete.Search(list, ss), res = [];
         while ((search = search.next()) && res.length < 20) {
@@ -611,9 +612,10 @@ Complete.engines = {
     baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent(location.href)))",
     queryApi: function(query, callback) {
       this.HatenaBookmark.load(function(list) {
+        var lower = list.toLowerCase();
         var words = query.split(/\s+/).filter(function(s) { return s.length; });
         var ss = words.map(function(w) {
-          return Complete.SearchWord(list, w);
+          return Complete.SearchWord(lower, w.toLowerCase());
         });
         var search = Complete.Search(list, ss), res = [];
         while ((search = search.next()) && res.length < 20) {
