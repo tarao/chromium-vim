@@ -60,7 +60,7 @@ var defaultSettings = {
 };
 
 chrome.storage.onChanged.addListener(function(changes) {
-  if (!changes.hasOwnProperty('sessions')) {
+  if (changes.hasOwnProperty('sessions')) {
     settings = changes.settings ? changes.settings.newValue : defaultSettings;
   }
 });
