@@ -39,7 +39,8 @@ var Complete = {
   },
 
   aliases: {
-    g: 'google'
+    g: 'google',
+    wikipedia: 'en.wikipedia'
   },
 
   activeEngines: [],
@@ -162,10 +163,27 @@ Complete.engines = {
     }
   },
 
-  wikipedia: {
+  'en.wikipedia': {
     baseUrl: 'https://en.wikipedia.org/wiki/Main_Page',
     requestUrl: 'https://en.wikipedia.org/w/index.php?search=%s&title=Special:Search',
     apiUrl: 'https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=%s',
+    formatRequest: function(query) {
+      return encodeURIComponent(query).split('%20').join('+');
+    },
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: this.apiUrl.embedString(query),
+        json: true
+      }, function(response) {
+        callback(response[1]);
+      });
+    }
+  },
+
+  'ja.wikipedia': {
+    baseUrl: 'https://ja.wikipedia.org/wiki/Main_Page',
+    requestUrl: 'https://ja.wikipedia.org/w/index.php?search=%s&title=Special:Search',
+    apiUrl: 'https://ja.wikipedia.org/w/api.php?action=opensearch&format=json&search=%s',
     formatRequest: function(query) {
       return encodeURIComponent(query).split('%20').join('+');
     },
