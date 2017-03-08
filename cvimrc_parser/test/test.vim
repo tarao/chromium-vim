@@ -7,13 +7,21 @@ set typelinkhints
 let scrollduration = 250
 let homedirectory = '/home/jake'
 let searchlimit = 25
-let completionengines = ['google', 'wikipedia', 'imdb', 'amazon', 'wolframalpha', 'duckduckgo']
-let qmark a = ['http://www.reddit.com/r/learnjavascript/new', 'http://www.reddit.com/r/learnpython/new/', 'http://www.reddit.com/r/learnprogramming/new']
+
+let completionengines = [
+      \ 'google',  'wikipedia', 'imdb',
+      \ 'amazon', 'wolframalpha', 'duckduckgo'
+      \ ]
+let qmark
+      \ a = ['http://www.reddit.com/r/learnjavascript/new', 'http://www.reddit.com/r/learnpython/new/', 'http://www.reddit.com/r/learnprogramming/new']
 imap <C-o> editWithVim
 map <C-o> :duplicate<CR>
 map af createTabbedHint
 map xx closeTab
 map $ lastTab
+
+"
+
 map 0 firstTab
 map g0 scrollToLeft
 map g$ scrollToRight
@@ -64,3 +72,6 @@ command refresh open @%
 " Comment 1
 "
 " Comment 2
+
+let array = [0, [0, 1, 123], 2]
+let array_elem = array[1 ][ 2]
