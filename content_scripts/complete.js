@@ -505,6 +505,50 @@ Complete.engines = {
     }
   },
 
+  oald: {
+    baseUrl: 'http://www.oxfordlearnersdictionaries.com/',
+    requestUrl: 'http://www.oxfordlearnersdictionaries.com/search/english/?q=%s',
+    apiUrl: 'http://www.oxfordlearnersdictionaries.com/autocomplete/english/?contentType=application/json;%20charset=utf-8&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.results.map(function(item) {
+          return item.searchtext;
+        }));
+      });
+    }
+  },
+
+  oaad: {
+    baseUrl: 'http://www.oxfordlearnersdictionaries.com/',
+    requestUrl: 'http://www.oxfordlearnersdictionaries.com/search/american_english/?q=%s',
+    apiUrl: 'http://www.oxfordlearnersdictionaries.com/autocomplete/american_english/?contentType=application/json;%20charset=utf-8&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.results.map(function(item) {
+          return item.searchtext;
+        }));
+      });
+    }
+  },
+
+  collins: {
+    baseUrl: 'https://www.collinsdictionary.com/',
+    requestUrl: 'https://www.collinsdictionary.com/search/?dictCode=english&q=%s',
+    apiUrl: 'https://www.collinsdictionary.com/autocomplete/?dictCode=english&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, callback);
+    }
+  },
+
   imdb: {
     baseUrl: 'http://www.imdb.com',
     requestUrl: 'http://www.imdb.com/find?s=all&q=',
