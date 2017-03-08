@@ -650,6 +650,33 @@ Complete.engines = {
     }
   },
 
+  metacpan: {
+    baseUrl: 'https://metacpan.org/',
+    requestUrl: 'https://metacpan.org/search?q=%s',
+    apiUrl: 'https://metacpan.org/search/autocomplete?q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.suggestions.map(function(item) {
+          var label = item.value;
+          var path = 'search?q=' + encodeURIComponent(item.value);
+          switch (item.data.type) {
+          case 'author':
+            label = 'Author: ' + label;
+            path = 'author/' + item.data.id;
+            break;
+          case 'module':
+            path = 'pod/' + item.data.module;
+            break;
+          }
+          return [ label, this.baseUrl + path ];
+        }.bind(this)));
+      }.bind(this));
+    }
+  },
+
   'hatena-bookmark': {
     baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent(location.href)))",
     queryApi: function(query, callback) {
