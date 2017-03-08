@@ -619,6 +619,7 @@ Complete.engines = {
 
   rfc: {
     baseUrl: "https://www.rfc-editor.org/",
+    requestUrl: 'https://tools.ietf.org/html/rfc',
     queryApi: function(query, callback) {
       this.RFC.load(function(list) {
         var lower = list.toLowerCase();
