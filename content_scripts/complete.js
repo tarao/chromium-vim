@@ -226,7 +226,7 @@ Complete.engines = {
     },
     queryApi: function(query, callback) {
       httpRequest({
-        url: this.apiUrl.embedString(query),
+        url: Utils.format(this.apiUrl, query),
         json: true
       }, function(response) {
         callback(response[1]);
