@@ -39,7 +39,8 @@ var Complete = {
   },
 
   aliases: {
-    g: 'google'
+    g: 'google',
+    wikipedia: 'en.wikipedia'
   },
 
   activeEngines: [],
@@ -135,7 +136,45 @@ var Complete = {
   },
   engineEnabled: function(name) {
     return this.activeEngines.indexOf(name) !== -1;
-  }
+  },
+
+  SearchWord: function(lines, query, position) {
+    var self = this;
+    return {
+      position: position || -1,
+      next: function() {
+        var i = lines.indexOf(query, position);
+        if (i < 0) return null;
+        return self.SearchWord(lines, query, lines.indexOf("\n", i));
+      },
+    };
+  },
+  Search: function(lines, streams, position) { // conjunctive
+    var self = this;
+    return {
+      position: position || -1,
+      next: function() {
+        var max = this.position + 1, min = lines.length, i;
+        var ss = streams.concat([]);
+        while (min !== max) {
+          min = max;
+          for (i=0; i < ss.length; i++) {
+            var s = ss[i];
+            if (s.position < max) s = s.next();
+            if (!s) return null;
+            if (max < s.position) max = s.position;
+            if (s.position < min) min = s.position;
+            ss[i] = s;
+          }
+        }
+        return self.Search(lines, ss, max);
+      },
+      result: function() {
+        var start = lines.lastIndexOf("\n", this.position - 1) + 1;
+        return lines.substring(start, this.position);
+      },
+    };
+  },
 };
 
 Complete.engines = {
@@ -161,10 +200,27 @@ Complete.engines = {
     }
   },
 
-  wikipedia: {
+  'en.wikipedia': {
     baseUrl: 'https://en.wikipedia.org/wiki/Main_Page',
     requestUrl: 'https://en.wikipedia.org/w/index.php?search=%s&title=Special:Search',
     apiUrl: 'https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=%s',
+    formatRequest: function(query) {
+      return encodeURIComponent(query).split('%20').join('+');
+    },
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, query),
+        json: true
+      }, function(response) {
+        callback(response[1]);
+      });
+    }
+  },
+
+  'ja.wikipedia': {
+    baseUrl: 'https://ja.wikipedia.org/wiki/Main_Page',
+    requestUrl: 'https://ja.wikipedia.org/w/index.php?search=%s&title=Special:Search',
+    apiUrl: 'https://ja.wikipedia.org/w/api.php?action=opensearch&format=json&search=%s',
     formatRequest: function(query) {
       return encodeURIComponent(query).split('%20').join('+');
     },
@@ -449,6 +505,50 @@ Complete.engines = {
     }
   },
 
+  oald: {
+    baseUrl: 'http://www.oxfordlearnersdictionaries.com/',
+    requestUrl: 'http://www.oxfordlearnersdictionaries.com/search/english/?q=%s',
+    apiUrl: 'http://www.oxfordlearnersdictionaries.com/autocomplete/english/?contentType=application/json;%20charset=utf-8&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.results.map(function(item) {
+          return item.searchtext;
+        }));
+      });
+    }
+  },
+
+  oaad: {
+    baseUrl: 'http://www.oxfordlearnersdictionaries.com/',
+    requestUrl: 'http://www.oxfordlearnersdictionaries.com/search/american_english/?q=%s',
+    apiUrl: 'http://www.oxfordlearnersdictionaries.com/autocomplete/american_english/?contentType=application/json;%20charset=utf-8&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.results.map(function(item) {
+          return item.searchtext;
+        }));
+      });
+    }
+  },
+
+  collins: {
+    baseUrl: 'https://www.collinsdictionary.com/',
+    requestUrl: 'https://www.collinsdictionary.com/search/?dictCode=english&q=%s',
+    apiUrl: 'https://www.collinsdictionary.com/autocomplete/?dictCode=english&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, callback);
+    }
+  },
+
   imdb: {
     baseUrl: 'http://www.imdb.com',
     requestUrl: 'http://www.imdb.com/find?s=all&q=',
@@ -517,21 +617,83 @@ Complete.engines = {
     }
   },
 
-  'hatena-bookmark': {
-    baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent(location.href)))",
+  rfc: {
+    baseUrl: "https://www.rfc-editor.org/",
     queryApi: function(query, callback) {
-      this.HatenaBookmark.load(function(list) {
+      this.RFC.load(function(list) {
+        var lower = list.toLowerCase();
         var words = query.split(/\s+/).filter(function(s) { return s.length; });
         var ss = words.map(function(w) {
-          return this.SearchWord(list, w);
-        }.bind(this));
-        var search = this.Search(list, ss), res = [];
+          return Complete.SearchWord(lower, w.toLowerCase());
+        });
+        var search = Complete.Search(list, ss), res = [];
+        while ((search = search.next()) && res.length < 20) {
+          var candidate = search.result();
+          var num = candidate.replace(/ .*$/, '');
+          res.push([ candidate, 'https://tools.ietf.org/html/rfc' + num ]);
+        }
+        callback(res);
+      });
+    },
+    RFC: {
+      api: 'https://www.rfc-editor.org/rfc-index.txt',
+      load: function(callback) {
+        httpRequest({ url: this.api }, function(res) {
+          var list = res.split("\n\n").filter(function(line) {
+            return /^[0-9]/.test(line);
+          });
+          callback(list.map(function(item) {
+            return item.replace(/\n +/, ' ').split(/[.] /)[0];
+          }).reverse().join("\n"));
+        });
+      }
+    }
+  },
+
+  metacpan: {
+    baseUrl: 'https://metacpan.org/',
+    requestUrl: 'https://metacpan.org/search?q=%s',
+    apiUrl: 'https://metacpan.org/search/autocomplete?q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.suggestions.map(function(item) {
+          var label = item.value;
+          var path = 'search?q=' + encodeURIComponent(item.value);
+          switch (item.data.type) {
+          case 'author':
+            label = 'Author: ' + label;
+            path = 'author/' + item.data.id;
+            break;
+          case 'module':
+            path = 'pod/' + item.data.module;
+            break;
+          }
+          return [ label, this.baseUrl + path ];
+        }.bind(this)));
+      }.bind(this));
+    }
+  },
+
+  'hatena-bookmark': {
+    baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent(location.href)))",
+    requestUrl: 'http://b.hatena.ne.jp/my/add.confirm?url=%s',
+    queryApi: function(query, callback) {
+      this.HatenaBookmark.load(function(list) {
+        var lower = list.toLowerCase();
+        var words = query.split(/\s+/).filter(function(s) { return s.length; });
+        var ss = words.map(function(w) {
+          return Complete.SearchWord(lower, w.toLowerCase());
+        });
+        var search = Complete.Search(list, ss), res = [];
         while ((search = search.next()) && res.length < 20) {
           var item = search.result().split("\t");
           res.push([ item[0] + "\n" + item[1], item[2] ]);
         }
         callback(res);
-      }.bind(this));
+      });
     },
     HatenaBookmark: {
       api: function(offset, limit) {
@@ -586,43 +748,6 @@ Complete.engines = {
           callback(item.list);
         }.bind(this));
       }
-    },
-    SearchWord: function(lines, query, position) {
-      var self = this;
-      return {
-        position: position || -1,
-        next: function() {
-          var i = lines.indexOf(query, position);
-          if (i < 0) return null;
-          return self.SearchWord(lines, query, lines.indexOf("\n", i));
-        },
-      };
-    },
-    Search: function(lines, streams, position) { // conjunctive
-      var self = this;
-      return {
-        position: position || -1,
-        next: function() {
-          var max = this.position + 1, min = lines.length, i;
-          var ss = streams.concat([]);
-          while (min !== max) {
-            min = max;
-            for (i=0; i < ss.length; i++) {
-              var s = ss[i];
-              if (s.position < max) s = s.next();
-              if (!s) return null;
-              if (max < s.position) max = s.position;
-              if (s.position < min) min = s.position;
-              ss[i] = s;
-            }
-          }
-          return self.Search(lines, ss, max);
-        },
-        result: function() {
-          var start = lines.lastIndexOf("\n", this.position - 1) + 1;
-          return lines.substring(start, this.position);
-        },
-      };
     },
   },
 };
