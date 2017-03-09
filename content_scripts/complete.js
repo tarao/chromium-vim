@@ -678,6 +678,34 @@ Complete.engines = {
     }
   },
 
+  javadoc: {
+    baseUrl: 'https://search.maven.org/',
+    requestUrl: 'https://search.maven.org/#search|ga|1|%s',
+    apiUrl: 'https://search.maven.org/solrsearch/select?q=%s&rows=20&wt=json',
+    docUrl: 'https://oss.sonatype.org/service/local/repositories/releases/archive',
+    queryApi: function(query, callback) {
+      var docUrl = this.docUrl;
+      httpRequest({
+        url: Utils.format(this.apiUrl, encodeURIComponent(query)),
+        json: true
+      }, function(response) {
+        callback(response.response.docs.map(function(item) {
+          var group = item.g;
+          var artifact = item.a;
+          var version = item.latestVersion;
+          var url = [
+            docUrl,
+            group.replace(/[.]/g, '/'),
+            artifact,
+            version,
+            [ artifact, version, 'javadoc.jar/!/index.html' ].join('-')
+          ].join('/');
+          return [ [ group, artifact, version ].join(':'), url ];
+        }));
+      });
+    }
+  },
+
   'hatena-bookmark': {
     baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent(location.href)))",
     requestUrl: 'http://b.hatena.ne.jp/my/add.confirm?url=%s',
