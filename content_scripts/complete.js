@@ -200,6 +200,50 @@ Complete.engines = {
     }
   },
 
+  'ja.google': {
+    baseUrl: 'https://www.google.co.jp/',
+    requestUrl: 'https://www.google.com/search?hl=ja&lr=lang_ja&q=',
+    apiUrl: 'https://www.google.com/complete/search?client=chrome-omni&gs_ri=chrome-ext&oit=1&cp=1&pgcl=7&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, query),
+        json: true
+      }, function(response) {
+        var data = response[1].map(function(e, i) {
+          return {
+            type: response[4]['google:suggesttype'][i],
+            text: e
+          };
+        });
+        callback(data.sort(function(a) {
+          return a.type !== 'NAVIGATION';
+        }).map(function(e) { return e.text; }));
+      });
+    }
+  },
+
+  'en.google': {
+    baseUrl: 'https://www.google.com/',
+    requestUrl: 'https://www.google.com/search?hl=en&lr=lang_en&q=',
+    apiUrl: 'https://www.google.com/complete/search?client=chrome-omni&gs_ri=chrome-ext&oit=1&cp=1&pgcl=7&q=%s',
+    queryApi: function(query, callback) {
+      httpRequest({
+        url: Utils.format(this.apiUrl, query),
+        json: true
+      }, function(response) {
+        var data = response[1].map(function(e, i) {
+          return {
+            type: response[4]['google:suggesttype'][i],
+            text: e
+          };
+        });
+        callback(data.sort(function(a) {
+          return a.type !== 'NAVIGATION';
+        }).map(function(e) { return e.text; }));
+      });
+    }
+  },
+
   'en.wikipedia': {
     baseUrl: 'https://en.wikipedia.org/wiki/Main_Page',
     requestUrl: 'https://en.wikipedia.org/w/index.php?search=%s&title=Special:Search',
