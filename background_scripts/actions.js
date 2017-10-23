@@ -6,9 +6,8 @@ Actions = (function() {
 
   var openTab = function(options, times) {
     if (/^(?:http:|https:)/.test(options.url)) {
-      var url = options.url.replace(/[']/g, '%27');
-      var code = encodeURIComponent('location.href=\'' + url + '\'');
-      options.url = 'javascript:'+code;
+      var url = options.url.replace(/[']/g, '%2527');
+      options.url = 'javascript:location.href=\'' + url + '\'';
     }
 
     times = +times || 1;
