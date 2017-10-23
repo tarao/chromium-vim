@@ -5,9 +5,6 @@ Actions = (function() {
   var lastCommand = null;
 
   var openTab = function(options, times) {
-    var url = options.url.replace(/[']/g, '%2527');
-    options.url = 'javascript:location.href=\'' + url + '\'';
-
     times = +times || 1;
     var doOpen = function() {
       for (var i = 0; i < times; ++i)
