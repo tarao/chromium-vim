@@ -752,7 +752,7 @@ Complete.engines = {
 
   'hatena-bookmark': {
     baseUrl: "javascript:window.open('http://b.hatena.ne.jp/entry/%s'.replace('%s',encodeURIComponent((document.querySelector('link[rel=\"canonical\"]')||location).href)))",
-    requestUrl: 'http://b.hatena.ne.jp/my/add.confirm?url=%s',
+    requestUrl: 'http://b.hatena.ne.jp/entry?url=%s',
     queryApi: function(query, callback) {
       this.HatenaBookmark.load(function(list) {
         var lower = list.toLowerCase();
